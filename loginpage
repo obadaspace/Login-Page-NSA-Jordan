@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NSA Jordan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getFirestore, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIFWn1P7fLp0l66KFixnOLaUnd3zUALFs",
+      authDomain: "nsajordan.firebaseapp.com",
+      projectId: "nsajordan",
+      storageBucket: "nsajordan.firebasestorage.app",
+      messagingSenderId: "1071906720444",
+      appId: "1:1071906720444:web:8e0b7d7a94ffbbfeec9eb9",
+      measurementId: "G-7JX297SRB6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Elements
+    const authContainer = document.getElementById("auth-container");
+    const mainContent = document.getElementById("main-content");
+    const signupForm = document.getElementById("signup-form");
+    const loginForm = document.getElementById("login-form");
+    const logoutBtn = document.getElementById("logout-btn");
+
+    // Sign up
+    signupForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("signup-email").value;
+      const password = document.getElementById("signup-password").value;
+      const major = document.getElementById("signup-major").value;
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Save major in Firestore
+        await setDoc(doc(db, "users", user.uid), { major: major });
+
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    // Login
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value;
+      const password = document.getElementById("login-password").value;
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    // Logout
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+    });
+
+    // Protect page + redirect
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const docRef = doc(db, "users", user.uid);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            const major = docSnap.data().major;
+
+            if (major === "medicine") {
+              window.location.href = "https://nsajordan.com/home/#medical-students";
+            } else if (major === "dentistry") {
+              window.location.href = "https://nsajordan.com/home/#dental-students";
+            } else {
+              mainContent.style.display = "block";
+              document.getElementById("content").innerHTML = "<h2>Welcome!</h2>";
+            }
+          } else {
+            mainContent.style.display = "block";
+            document.getElementById("content").innerHTML = "<h2>Welcome!</h2>";
+          }
+        } catch (err) {
+          console.error("Error fetching user data:", err);
+        }
+      } else {
+        authContainer.style.display = "block";
+        mainContent.style.display = "none";
+      }
+    });
+  </script>
+
+  <style>
+    /* Custom font */
+    @font-face {
+      font-family: 'SF Pro Display';
+      src: url('SFPRODISPLAYMEDIUM.OTF') format('opentype');
+    }
+
+    body {
+      font-family: 'SF Pro Display', sans-serif;
+      background-color: black;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      text-align: center;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 5px;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    #main-content {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login / Signup -->
+  <div class="container" id="auth-container">
+    <h2>Sign Up</h2>
+    <form id="signup-form">
+      <input type="email" id="signup-email" placeholder="Email" required>
+      <input type="password" id="signup-password" placeholder="Password" required>
+      <select id="signup-major" required>
+        <option value="">Select Major</option>
+        <option value="medicine">Doctor of Medicine</option>
+        <option value="dentistry">Dentistry</option>
+      </select>
+      <button type="submit">Sign Up</button>
+    </form>
+
+    <h2>Login</h2>
+    <form id="login-form">
+      <input type="email" id="login-email" placeholder="Email" required>
+      <input type="password" id="login-password" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container" id="main-content">
+    <div id="content"></div>
+    <button id="logout-btn">Logout</button>
+  </div>
+
+</body>
+</html>
